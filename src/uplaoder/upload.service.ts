@@ -41,7 +41,79 @@ export class UploadService {
     // Return the complete data
     return fileData;
   }
+  
+  async getFilesByPatientAndType(
+    patientId: string,
+    type: string,
+  ): Promise<any[]> {
+    return this.db
+      .collection('uploads')
+      .find({
+        patientId,
+        type,
+      })
+      .sort({ uploadedAt: -1 }) // newest first
+      .toArray();
+  }
+  
+  async getFilesByPatient(patientId: string): Promise<any[]> {
+    return this.db
+      .collection('uploads')
+      .find({ patientId })
+      .sort({ uploadedAt: -1 })
+      .toArray();
+  }
 
+
+  async getFilesByPatientAndTypePaginated(
+    patientId: string,
+    type: string,
+    page = 1,
+    limit = 10,
+  ) {
+    return this.db
+      .collection('uploads')
+      .find({ patientId, type })
+      .sort({ uploadedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .toArray();
+  }
+
+  async getFilesByDoctorAndType(
+    doctorId: string,
+    type: string,
+  ): Promise<any[]> {
+    return this.db
+      .collection('uploads')
+      .find({
+        doctorId,
+        type,
+      })
+      .sort({ uploadedAt: -1 }) // newest first
+      .toArray();
+  }
+
+  async getFilesByDoctor(doctorId: string): Promise<any[]> {
+    return this.db
+      .collection('uploads')
+      .find({ doctorId })
+      .sort({ uploadedAt: -1 })
+      .toArray();
+  }
+  async getDoctorFilesForPatient(
+    doctorId: string,
+    patientId: string,
+  ): Promise<any[]> {
+    return this.db
+      .collection('uploads')
+      .find({
+        doctorId,
+        patientId,
+      })
+      .sort({ uploadedAt: -1 })
+      .toArray();
+  }
   async uploadMultipleFiles(
     files: Express.Multer.File[],
     data: {
