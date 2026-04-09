@@ -1,18 +1,31 @@
-// app.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { UploadModule } from './uplaoder/upload.module';
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+// Config
+import mongoConfig from './database/database.config';
 
-
-import {UploadModule} from './uplaoder/upload.module';
 @Module({
-  imports: [   
-    MongooseModule.forRoot('mongodb://127.0.0.1:27017/clinic_db'),
+  imports: [
+    // Global config
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [mongoConfig],
+    }),
+
+    // MongoDB connection
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('mongodb.uri'),
+        dbName: configService.get<string>('mongo.database'),
+      }),
+    }),
+
+    // Feature modules
     UploadModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
