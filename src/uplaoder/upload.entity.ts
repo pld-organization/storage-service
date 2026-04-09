@@ -19,6 +19,9 @@ export class File {
 
   @Prop()
   size: number;
+  
+  @Prop()
+  doctorId: string; // optional: link to doctor
 
   @Prop()
   patientId: string; // optional: link to patient
