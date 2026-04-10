@@ -19,9 +19,7 @@ import { UploadFileDataDto } from './dto/upload-file.dto';
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
-  // =========================
-  // UPLOAD
-  // =========================
+
 
   @Post('single')
   @UseInterceptors(FileInterceptor('file', multerConfig))
@@ -49,9 +47,7 @@ export class UploadController {
     return this.uploadService.uploadMultipleFiles(files, data);
   }
 
-  // =========================
-  // PATIENT ROUTES
-  // =========================
+
 
   // 🔍 Get all files of a patient
   @Get('patient/:patientId')
@@ -68,9 +64,7 @@ export class UploadController {
     return this.uploadService.getFilesByPatientAndType(patientId, type);
   }
 
-  // =========================
-  // DOCTOR ROUTES
-  // =========================
+
 
   // 🔍 Get all files uploaded by a doctor
   @Get('doctor/:doctorId')
@@ -94,7 +88,7 @@ export class UploadController {
     @Param('patientId') patientId: string,
   ) {
     return this.uploadService.getDoctorFilesForPatient(
-      doctorId,
+      doctorId
       patientId,
     );
   }
