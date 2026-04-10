@@ -88,7 +88,7 @@ export class UploadController {
     @Param('patientId') patientId: string,
   ) {
     return this.uploadService.getDoctorFilesForPatient(
-      doctorId
+      doctorId,
       patientId,
     );
   }
