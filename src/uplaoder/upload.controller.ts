@@ -49,13 +49,13 @@ export class UploadController {
 
 
 
-  // 🔍 Get all files of a patient
+  
   @Get('patient/:patientId')
   async getFilesByPatient(@Param('patientId') patientId: string) {
     return this.uploadService.getFilesByPatient(patientId);
   }
 
-  // 🔍 Get patient files by type
+  
   @Get('patient/:patientId/type/:type')
   async getFilesByPatientAndType(
     @Param('patientId') patientId: string,
@@ -66,13 +66,13 @@ export class UploadController {
 
 
 
-  // 🔍 Get all files uploaded by a doctor
+  
   @Get('doctor/:doctorId')
   async getFilesByDoctor(@Param('doctorId') doctorId: string) {
     return this.uploadService.getFilesByDoctor(doctorId);
   }
 
-  // 🔍 Get doctor files by type
+  
   @Get('doctor/:doctorId/type/:type')
   async getFilesByDoctorAndType(
     @Param('doctorId') doctorId: string,
@@ -81,7 +81,7 @@ export class UploadController {
     return this.uploadService.getFilesByDoctorAndType(doctorId, type);
   }
 
-  // 🔍 Get files of a specific patient for a doctor
+  
   @Get('doctor/:doctorId/patient/:patientId')
   async getDoctorFilesForPatient(
     @Param('doctorId') doctorId: string,
@@ -91,5 +91,10 @@ export class UploadController {
       doctorId,
       patientId,
     );
+  }
+
+  @Get('filename/:filename')
+  async getFileByID(@Param('filename') filename: string) {
+    return this.uploadService.getFileByName(filename);
   }
 }

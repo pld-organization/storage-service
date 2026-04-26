@@ -3,18 +3,18 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UploadModule } from './uplaoder/upload.module';
 
-// Config
+
 import mongoConfig from './database/database.config';
 
 @Module({
   imports: [
-    // Global config
+
     ConfigModule.forRoot({
       isGlobal: true,
       load: [mongoConfig],
     }),
 
-    // MongoDB connection
+
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -24,7 +24,7 @@ import mongoConfig from './database/database.config';
       }),
     }),
 
-    // Feature modules
+
     UploadModule,
   ],
 })

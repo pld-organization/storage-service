@@ -1,47 +1,32 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Db } from 'mongodb';
+import { Db , ObjectId} from 'mongodb';
+
 
 @Injectable()
 export class UploadService {
   constructor(@Inject('MONGO_DB') private db: Db) {}
 
   async uploadFile(
-    file: Express.Multer.File,
-    data: {
-      doctorId: string;
-      patientId: string;
-      fileType: string;
-    },
-  ): Promise<{
-    originalName: string;
-    filename: string;
-    size: number;
-    mimetype: string;
-    path: string;
-    patientId: string;
-    doctorId?: string;
-    type: string;
-    uploadedAt: Date;
-  }> {
-    const fileData = {
-      originalName: file.originalname,
-      filename: file.filename,
-      size: file.size,
-      mimetype: file.mimetype,
-      path: file.path,
-      patientId: data.patientId,
-      doctorId: data.doctorId,
-      type: data.fileType,
-      uploadedAt: new Date(),
-    };
+  file: Express.Multer.File,
+  data: Record<string, any>,
+) {
+  const fileData = {
+    ...data,                                          // everything from the form
+    prediction: data.prediction
+      ? JSON.parse(data.prediction)                  // string → real object
+      : null,
+    originalName: file.originalname,
+    filename:     file.filename,
+    size:         file.size,
+    mimetype:     file.mimetype,
+    path:         file.path,
+    uploadedAt:   new Date(),
+  };
 
-    // Save metadata to MongoDB
-    await this.db.collection('uploads').insertOne(fileData);
+  await this.db.collection('uploads').insertOne(fileData);
+  return fileData;
+}
 
-    // Return the complete data
-    return fileData;
-  }
-  
   async getFilesByPatientAndType(
     patientId: string,
     type: string,
@@ -62,6 +47,12 @@ export class UploadService {
       .find({ patientId })
       .sort({ uploadedAt: -1 })
       .toArray();
+  }
+
+  async getFileByName(filename: string): Promise<any | null> {
+    return this.db
+      .collection('uploads')
+      .findOne({ filename });
   }
 
 
@@ -93,7 +84,8 @@ export class UploadService {
       .sort({ uploadedAt: -1 }) // newest first
       .toArray();
   }
-
+ 
+  
   async getFilesByDoctor(doctorId: string): Promise<any[]> {
     return this.db
       .collection('uploads')
