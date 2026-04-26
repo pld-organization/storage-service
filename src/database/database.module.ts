@@ -6,7 +6,8 @@ import { MongoClient } from 'mongodb';
     {
       provide: 'MONGO_DB',
       useFactory: async () => {
-        const uri = process.env.MONGODB_URI; 
+        const uri = process.env.MONGODB_URI as string;
+        if (!uri) throw new Error('MONGODB_URI is not defined');
         const client = new MongoClient(uri);
         await client.connect();
         const dbName = process.env.MONGODB_DB || 'clinic_db';
