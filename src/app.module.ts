@@ -20,7 +20,7 @@ import mongoConfig from './database/database.config';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('mongodb.uri'),
-        dbName: configService.get<string>('mongo.database'),
+        dbName: configService.get<string>('mongodb.database'),
       }),
     }),
 
