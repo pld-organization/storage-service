@@ -4,6 +4,15 @@ import { MulterExceptionFilter } from './filters/multer-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const httpAdapter = app.getHttpAdapter();
+  const expressApp = httpAdapter.getInstance();
+  
+  // RAW EXPRESS ROUTE (bypass NestJS entirely)
+  expressApp.get('/health-raw', (req, res) => {
+    res.send('OK from raw express');
+  });
+  
   app.enableCors({
     origin: "http://localhost:5173",
     credentials: true,
