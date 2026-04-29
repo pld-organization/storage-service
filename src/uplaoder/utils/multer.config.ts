@@ -22,7 +22,9 @@ export const multerConfig = {
     },
   }),
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
+    // 300MB: 300 * 1024 * 1024 bytes
+    fileSize: 314572800,
+    fieldSize: 104857600,
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
@@ -31,6 +33,9 @@ export const multerConfig = {
       'image/png',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/json', // <--- Added for your 3D Mesh JSON
     ];
 
     if (allowedTypes.includes(file.mimetype)) {
@@ -38,7 +43,7 @@ export const multerConfig = {
     } else {
       cb(
         new BadRequestException(
-          'Type de fichier non supporté. Seuls PDF, JPEG, PNG et DOC sont autorisés.',
+          'Type de fichier non supporté. Seuls PDF, JPEG, PNG, DOC, ZIP et JSON sont autorisés.',
         ),
         false,
       );

@@ -13,7 +13,7 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { multerConfig } from './utils/multer.config';
-import { UploadFileDataDto } from './dto/upload-file.dto';
+
 
 @Controller('upload')
 export class UploadController {
@@ -25,7 +25,7 @@ export class UploadController {
   @UseInterceptors(FileInterceptor('file', multerConfig))
   async uploadSingleFile(
     @UploadedFile() file: Express.Multer.File,
-    @Body() data: UploadFileDataDto,
+    @Body() data: any,
   ) {
     if (!file) {
       throw new BadRequestException('Aucun fichier fourni');
@@ -38,12 +38,13 @@ export class UploadController {
   @UseInterceptors(FilesInterceptor('files', 5, multerConfig))
   async uploadMultipleFiles(
     @UploadedFiles() files: Express.Multer.File[],
-    @Body() data: UploadFileDataDto,
+    @Body() data: any, // Use 'any' or a proper DTO that includes 'prediction'
   ) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Aucun fichier fourni');
     }
 
+    // This now passes the 'data' containing your prediction string
     return this.uploadService.uploadMultipleFiles(files, data);
   }
 
@@ -59,9 +60,9 @@ export class UploadController {
   @Get('patient/:patientId/type/:type')
   async getFilesByPatientAndType(
     @Param('patientId') patientId: string,
-    @Param('type') type: string,
+    @Param('type') predictionType: string,
   ) {
-    return this.uploadService.getFilesByPatientAndType(patientId, type);
+    return this.uploadService.getFilesByPatientAndType(patientId, predictionType);
   }
 
 
@@ -96,5 +97,10 @@ export class UploadController {
   @Get('filename/:filename')
   async getFileByID(@Param('filename') filename: string) {
     return this.uploadService.getFileByName(filename);
+  }
+
+  @Get('meshfetch/:meshFilename')
+  async getMeshByName(@Param('meshFilename') meshFilename: string) { // <-- Added the closing ')' here
+    return this.uploadService.getmesh(meshFilename);
   }
 }
