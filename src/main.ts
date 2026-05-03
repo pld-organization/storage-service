@@ -14,7 +14,7 @@ async function bootstrap() {
   });
   
   app.enableCors({
-    origin: "http://localhost:5173",
+    origin: "https://frontend-ten-flax-32.vercel.app",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
