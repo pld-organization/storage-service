@@ -14,7 +14,7 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { multerConfig, multerMedicalConfig } from './utils/multer.config';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 @Controller('upload')
 export class UploadController {
@@ -144,7 +144,7 @@ export class UploadController {
   @Get('download/:filename')
   async downloadFile(
     @Param('filename') filename: string,
-    @Res() Res: Response,
+    @Res() res: Response,
   ) {
     return this.uploadService.downloadFile(filename, res);
   }
