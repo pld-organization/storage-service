@@ -231,6 +231,34 @@ export class UploadService {
     };
   }
 
+  async downloadFile(filename: string, res: Response) {
+    try {
+      // Récupère les métadonnées du fichier
+      const fileMetadata = await this.getFileByName(filename);
+    
+      if (!fileMetadata) {
+        throw new NotFoundException('Fichier non trouvé');
+      }
+    
+      // Récupère le fichier depuis GridFS ou ton stockage
+      const bucket = new GridFSBucket(this.db, {
+        bucketName: 'uploads'
+      });
+    
+      const downloadStream = bucket.openDownloadStreamByName(filename);
+    
+      // Définit les headers pour le téléchargement
+      res.set({
+        'Content-Type': fileMetadata.mimeType || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(fileMetadata.originalName)}"`,
+      });
+    
+      downloadStream.pipe(res);
+    } catch (error) {
+      throw new BadRequestException('Erreur lors du téléchargement');
+    }
+  }
+
   async uploadPatientMedicalFiles(
     files: Express.Multer.File[],
     data: Record<string, any>,
