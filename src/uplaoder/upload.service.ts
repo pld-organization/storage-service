@@ -1,7 +1,7 @@
 import { Injectable, Inject ,BadRequestException} from '@nestjs/common';
 import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { Db , ObjectId} from 'mongodb';
-import * as fs from 'fs'; // Add this at the top of your service file
+import * as fs from 'fs';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -168,10 +168,37 @@ export class UploadService {
         : data.prediction)
       : null;
   
-    // 2. Identify which file is which
-    // We assume the scan is the zip/image and the mesh is the JSON
-    const scanFile = files.find(f => f.mimetype !== 'application/json');
-    const meshFile = files.find(f => f.mimetype === 'application/json');
+    // 2. Identify which file is which.
+    // NIfTI (.nii, .nii.gz), ZIP, and RAR files are treated as the scan.
+    // JSON files are the 3D mesh output.
+    const NIFTI_MIME_TYPES = [
+      'application/octet-stream',
+      'application/gzip',
+      'application/x-gzip',
+      'image/gz',
+    ];
+    const RAR_MIME_TYPES = [
+      'application/x-rar-compressed',
+      'application/vnd.rar',
+      'application/rar',
+    ];
+    const SCAN_MIME_TYPES = [
+      'application/zip',
+      'application/x-zip-compressed',
+      ...NIFTI_MIME_TYPES,
+      ...RAR_MIME_TYPES,
+    ];
+
+    const isScanFile = (f: Express.Multer.File): boolean => {
+      if (f.mimetype === 'application/json') return false;
+      if (SCAN_MIME_TYPES.includes(f.mimetype)) return true;
+      // Extension-based detection for NIfTI files
+      const name = (f.originalname || '').toLowerCase();
+      return name.endsWith('.nii') || name.endsWith('.nii.gz') || name.endsWith('.rar');
+    };
+
+    const scanFile = files.find((f) => isScanFile(f));
+    const meshFile = files.find((f) => f.mimetype === 'application/json');
   
     if (!scanFile) {
       throw new BadRequestException('Main scan file is missing');
