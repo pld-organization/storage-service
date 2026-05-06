@@ -233,8 +233,9 @@ export class UploadService {
     };
   }
 
-  async downloadFile(filename: string, res: Response) {
+  async downloadFileContent(filename: string, res: Response) {
     try {
+      // Cherche le fichier dans la collection patient_medical_files
       let fileMetadata = await this.db
         .collection('patient_medical_files')
         .findOne({ filename });
@@ -252,28 +253,21 @@ export class UploadService {
       const filePath = fileMetadata.path;
       
       if (!filePath || !fs.existsSync(filePath)) {
-        throw new NotFoundException('Fichier physique non trouvé sur le disque');
+        throw new NotFoundException('Fichier physique non trouvé');
       }
     
       const originalName = fileMetadata.originalName || filename;
       const mimeType = fileMetadata.mimetype || 'application/octet-stream';
-      
+    
+      // Envoie le fichier binaire
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
-      
+    
       const fileStream = fs.createReadStream(filePath);
       fileStream.pipe(res);
     
-      fileStream.on('error', (error) => {
-        console.error('Stream error:', error);
-        throw new InternalServerErrorException('Erreur lors de la lecture du fichier');
-      });
-    
     } catch (error) {
       console.error('Download error:', error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new BadRequestException('Erreur lors du téléchargement');
     }
   }
