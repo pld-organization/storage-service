@@ -27,7 +27,7 @@ export const multerConfig = {
     fieldSize: 104857600,
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
+    const allowedMimeTypes = [
       'application/pdf',
       'image/jpeg',
       'image/png',
@@ -35,15 +35,36 @@ export const multerConfig = {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/zip',
       'application/x-zip-compressed',
-      'application/json', // <--- Added for your 3D Mesh JSON
+      'application/json',
+      // NIfTI formats (.nii and .nii.gz)
+      'application/octet-stream',
+      'application/gzip',
+      'application/x-gzip',
+      'image/gz',
+      // RAR archives
+      'application/x-rar-compressed',
+      'application/vnd.rar',
+      'application/rar',
     ];
 
-    if (allowedTypes.includes(file.mimetype)) {
+    // for unknown types, so we also allow by extension explicitly.
+    const allowedExtensions = [
+      '.nii',
+      '.nii.gz',
+      '.rar',
+    ];
+
+    const originalName: string = file.originalname || '';
+    const matchedByExtension = allowedExtensions.some((ext) =>
+      originalName.toLowerCase().endsWith(ext),
+    );
+
+    if (allowedMimeTypes.includes(file.mimetype) || matchedByExtension) {
       cb(null, true);
     } else {
       cb(
         new BadRequestException(
-          'Type de fichier non supporté. Seuls PDF, JPEG, PNG, DOC, ZIP et JSON sont autorisés.',
+          'Type de fichier non supporté. Seuls PDF, JPEG, PNG, DOC, ZIP, JSON, NIfTI (.nii, .nii.gz) et RAR sont autorisés.',
         ),
         false,
       );
