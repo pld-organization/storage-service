@@ -4,6 +4,7 @@ import { Db , ObjectId} from 'mongodb';
 import * as fs from 'fs';
 import * as path from 'path';  
 import { Response } from 'express';
+import { GridFSBucket } from 'mongodb';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -235,7 +236,9 @@ export class UploadService {
 
   async downloadFileContent(filename: string, res: Response) {
     try {
-      // Cherche le fichier dans la collection patient_medical_files
+      console.log("🔍 Recherche du fichier:", filename);
+    
+      // Cherche les métadonnées dans patient_medical_files
       let fileMetadata = await this.db
         .collection('patient_medical_files')
         .findOne({ filename });
@@ -250,28 +253,37 @@ export class UploadService {
         throw new NotFoundException('Fichier non trouvé');
       }
     
-      const filePath = fileMetadata.path;
-      
-      if (!filePath || !fs.existsSync(filePath)) {
-        throw new NotFoundException('Fichier physique non trouvé');
-      }
+      console.log("✅ Métadonnées trouvées");
+    
+      // Crée un bucket GridFS
+      const bucket = new GridFSBucket(this.db, {
+        bucketName: 'fs'  // ou le nom de ton bucket, souvent 'fs' par défaut
+      });
+    
+      // Ouvre le stream de téléchargement
+      const downloadStream = bucket.openDownloadStreamByName(filename);
     
       const originalName = fileMetadata.originalName || filename;
       const mimeType = fileMetadata.mimetype || 'application/octet-stream';
     
-      // Envoie le fichier binaire
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
     
-      const fileStream = fs.createReadStream(filePath);
-      fileStream.pipe(res);
+      downloadStream.pipe(res);
     
+      downloadStream.on('error', (error) => {
+        console.error("Stream error:", error);
+        throw new InternalServerErrorException('Erreur lors de la lecture du fichier');
+      });
+      
     } catch (error) {
       console.error('Download error:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new BadRequestException('Erreur lors du téléchargement');
     }
   }
-
   
   async uploadPatientMedicalFiles(
     files: Express.Multer.File[],
