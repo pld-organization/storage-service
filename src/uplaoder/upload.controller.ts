@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
-import { multerConfig } from './utils/multer.config';
+import { multerConfig, multerMedicalConfig } from './utils/multer.config';
 
 
 @Controller('upload')
@@ -100,7 +100,43 @@ export class UploadController {
   }
 
   @Get('meshfetch/:meshFilename')
-  async getMeshByName(@Param('meshFilename') meshFilename: string) { // <-- Added the closing ')' here
+  async getMeshByName(@Param('meshFilename') meshFilename: string) {
     return this.uploadService.getmesh(meshFilename);
+  }
+
+  // ─── Patient personal medical files ────────────────────────────────────────
+
+  /**
+   * POST /upload/patient/medical-files
+   * Patient uploads their own personal medical files (images / PDFs).
+   * Body (multipart/form-data):
+   *   - files        : one or more image/PDF files (field name: "files")
+   *   - patientId    : string (required)
+   *   - fileType     : string (optional) — e.g. "blood_test", "prescription", "xray", "general"
+   *   - description  : string (optional) — free-text note about the files
+   */
+  @Post('patient/medical-files')
+  @UseInterceptors(FilesInterceptor('files', 10, multerMedicalConfig))
+  async uploadPatientMedicalFiles(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() data: any,
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Aucun fichier fourni');
+    }
+    return this.uploadService.uploadPatientMedicalFiles(files, data);
+  }
+
+  /**
+   * GET /upload/patient/:patientId/medical-files
+   * Doctor (or patient) retrieves all personal medical files for a given patient.
+   * Optional query param: ?fileType=blood_test  to filter by category.
+   */
+  @Get('patient/:patientId/medical-files')
+  async getPatientMedicalFiles(
+    @Param('patientId') patientId: string,
+    @Query('fileType') fileType?: string,
+  ) {
+    return this.uploadService.getPatientMedicalFiles(patientId, fileType);
   }
 }
