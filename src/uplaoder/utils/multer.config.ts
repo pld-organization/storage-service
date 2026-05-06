@@ -2,17 +2,16 @@ import { GridFsStorage } from 'multer-gridfs-storage';
 import { BadRequestException } from '@nestjs/common';
 import * as path from 'path';
 
-// Configuration GridFS pour les fichiers généraux
+// ─── General files (scans, NIfTI, ZIP, JSON, etc.) ──────────────────────────
 export const multerConfig = {
   storage: new GridFsStorage({
-    url: process.env.MONGODB_URI ?? (() => { throw new Error('MONGO_URI is not defined') })(),
+    url: process.env.MONGODB_URI ?? (() => { throw new Error('MONGODB_URI is not defined') })(),
     file: (req, file) => {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
-        
         resolve({
-          filename: filename,
+          filename,
           bucketName: 'uploads',
           metadata: {
             originalName: file.originalname,
@@ -24,8 +23,8 @@ export const multerConfig = {
     },
   }),
   limits: {
-    fileSize: 314572800,
-    fieldSize: 104857600,
+    fileSize: 314572800,   // 300MB
+    fieldSize: 104857600,  // 100MB
   },
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = [
@@ -63,17 +62,16 @@ export const multerConfig = {
   },
 };
 
-// Configuration GridFS pour les fichiers médicaux (UN SEULE DÉFINITION)
-export const multerMedicalConfig = {
+// ─── Patient medical files (PDF, images, DOCX) ──────────────────────────────
+export const getMulterMedicalConfig = () => ({
   storage: new GridFsStorage({
-    url: process.env.MONGODB_URI ?? (() => { throw new Error('MONGO_URI is not defined') })(),
+    url: process.env.MONGODB_URI ?? (() => { throw new Error('MONGODB_URI is not defined') })(),
     file: (req, file) => {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const filename = 'medical-' + uniqueSuffix + path.extname(file.originalname);
-        
         resolve({
-          filename: filename,
+          filename,
           bucketName: 'medical-files',
           metadata: {
             originalName: file.originalname,
@@ -81,6 +79,7 @@ export const multerMedicalConfig = {
             fileType: req.body.fileType || 'general',
             description: req.body.description || null,
             uploadedAt: new Date(),
+            mimetype: file.mimetype,
           },
         });
       });
@@ -110,4 +109,4 @@ export const multerMedicalConfig = {
       );
     }
   },
-};
+});
