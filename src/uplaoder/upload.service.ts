@@ -235,35 +235,58 @@ export class UploadService {
   }
 
   async downloadFileContent(filename: string, res: Response) {
-    try {
-      console.log("🔍 Recherche du fichier:", filename);
-    
-      const bucket = new GridFSBucket(this.db, {
-        bucketName: 'medical-files'
-      });
-    
-      // Cherche le fichier dans GridFS
-      const files = await bucket.find({ filename: filename }).toArray();
-    
-      if (!files || files.length === 0) {
-        throw new NotFoundException('Fichier non trouvé');
+  try {
+    console.log("🔍 Recherche du fichier:", filename);
+
+    const bucket = new GridFSBucket(this.db, {
+      bucketName: 'medical-files'
+    });
+
+    const files = await bucket.find({ filename }).toArray();
+
+    if (!files || files.length === 0) {
+      // Fallback: check patient_medical_files collection for metadata
+      const record = await this.db
+        .collection('patient_medical_files')
+        .findOne({ filename });
+
+      if (!record) {
+        throw new NotFoundException(`Fichier "${filename}" non trouvé`);
       }
-    
-      const file = files[0];
-      const originalName = file.metadata?.originalName || filename;
-      const mimeType = file.metadata?.mimetype || 'application/octet-stream';
-    
-      res.setHeader('Content-Type', mimeType);
-      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
-    
-      const downloadStream = bucket.openDownloadStream(file._id);
-      downloadStream.pipe(res);
-    
-    } catch (error) {
-      console.error('Download error:', error);
-      throw new BadRequestException('Erreur lors du téléchargement');
+
+      // If found in DB but not in GridFS, the upload config is wrong
+      throw new InternalServerErrorException(
+        'Fichier trouvé en base mais absent de GridFS — vérifiez multerMedicalConfig'
+      );
+    }
+
+    const file = files[0];
+    const originalName = file.metadata?.originalName || filename;
+    const mimeType = file.metadata?.mimetype || 'application/octet-stream';
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', 
+      `attachment; filename="${encodeURIComponent(originalName)}"`);
+    res.setHeader('Content-Length', file.length);
+
+    const downloadStream = bucket.openDownloadStream(file._id);
+
+    downloadStream.on('error', (err) => {
+      console.error('Stream error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Erreur de stream' });
+      }
+    });
+
+    downloadStream.pipe(res);
+
+  } catch (error) {
+    console.error('Download error:', error);
+    if (!res.headersSent) {
+      throw error; // let NestJS handle it properly
     }
   }
+}
   
   async uploadPatientMedicalFiles(
     files: Express.Multer.File[],
