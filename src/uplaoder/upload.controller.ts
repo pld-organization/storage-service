@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
-import { multerConfig, multerMedicalConfig } from './utils/multer.config';
+import { multerConfig, getMulterMedicalConfig } from './utils/multer.config';
 import type { Response } from 'express';
 
 @Controller('upload')
@@ -117,7 +117,7 @@ export class UploadController {
    *   - description  : string (optional) — free-text note about the files
    */
   @Post('patient/medical-files')
-  @UseInterceptors(FilesInterceptor('files', 10, multerMedicalConfig))
+  @UseInterceptors(FilesInterceptor('files', 10, getMulterMedicalConfig()))
   async uploadPatientMedicalFiles(
     @UploadedFiles() files: Express.Multer.File[],
     @Body() data: any,
