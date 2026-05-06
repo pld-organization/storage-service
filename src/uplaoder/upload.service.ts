@@ -2,6 +2,8 @@ import { Injectable, Inject ,BadRequestException} from '@nestjs/common';
 import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { Db , ObjectId} from 'mongodb';
 import * as fs from 'fs';
+import * as path from 'path';  
+import { Response } from 'express';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -233,32 +235,50 @@ export class UploadService {
 
   async downloadFile(filename: string, res: Response) {
     try {
-      // Récupère les métadonnées du fichier
-      const fileMetadata = await this.getFileByName(filename);
+      let fileMetadata = await this.db
+        .collection('patient_medical_files')
+        .findOne({ filename });
+    
+      if (!fileMetadata) {
+        fileMetadata = await this.db
+          .collection('uploads')
+          .findOne({ filename });
+      }
     
       if (!fileMetadata) {
         throw new NotFoundException('Fichier non trouvé');
       }
     
-      // Récupère le fichier depuis GridFS ou ton stockage
-      const bucket = new GridFSBucket(this.db, {
-        bucketName: 'uploads'
+      const filePath = fileMetadata.path;
+      
+      if (!filePath || !fs.existsSync(filePath)) {
+        throw new NotFoundException('Fichier physique non trouvé sur le disque');
+      }
+    
+      const originalName = fileMetadata.originalName || filename;
+      const mimeType = fileMetadata.mimetype || 'application/octet-stream';
+      
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
+      
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    
+      fileStream.on('error', (error) => {
+        console.error('Stream error:', error);
+        throw new InternalServerErrorException('Erreur lors de la lecture du fichier');
       });
     
-      const downloadStream = bucket.openDownloadStreamByName(filename);
-    
-      // Définit les headers pour le téléchargement
-      res.set({
-        'Content-Type': fileMetadata.mimeType || 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(fileMetadata.originalName)}"`,
-      });
-    
-      downloadStream.pipe(res);
     } catch (error) {
+      console.error('Download error:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new BadRequestException('Erreur lors du téléchargement');
     }
   }
 
+  
   async uploadPatientMedicalFiles(
     files: Express.Multer.File[],
     data: Record<string, any>,
@@ -290,10 +310,23 @@ export class UploadService {
     const query: Record<string, any> = { patientId };
     if (fileType) query.fileType = fileType;
 
-    return this.db
+    const files = await this.db
       .collection('patient_medical_files')
       .find(query)
       .sort({ uploadedAt: -1 })
       .toArray();
+  
+    // Retourne les fichiers avec l'ID
+    return files.map(file => ({
+      _id: file._id,
+      originalName: file.originalName,
+      filename: file.filename,
+      fileType: file.fileType,
+      description: file.description,
+      size: file.size,
+      mimetype: file.mimetype,
+      uploadedAt: file.uploadedAt,
+      patientId: file.patientId,
+    }));
   }
 }
