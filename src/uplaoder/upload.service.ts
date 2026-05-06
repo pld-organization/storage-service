@@ -15,7 +15,7 @@ export class UploadService {
   data: Record<string, any>,
 ) {
   const fileData = {
-    ...data,                                          // everything from the form
+    ...data,                                      
     prediction: data.prediction
       ? (typeof data.prediction === 'string'
       ? JSON.parse(data.prediction)
@@ -216,20 +216,56 @@ export class UploadService {
       mimetype:     scanFile.mimetype,
       path:         scanFile.path,
       
-      // Mesh File Info (Stored as extra fields in the same document)
       meshFilename: meshFile ? meshFile.filename : null,
       meshPath:     meshFile ? meshFile.path : null,
       meshSize:     meshFile ? meshFile.size : null,
       
       uploadedAt:   new Date(),
     };
-  
-    // 4. Save only ONE document to the collection
+
     const result = await this.db.collection('uploads').insertOne(combinedData);
   
     return {
       _id: result.insertedId,
       ...combinedData
     };
+  }
+
+  async uploadPatientMedicalFiles(
+    files: Express.Multer.File[],
+    data: Record<string, any>,
+  ): Promise<any[]> {
+    if (!data.patientId) {
+      throw new BadRequestException('patientId est requis');
+    }
+
+    const records = files.map((file) => ({
+      patientId: data.patientId,
+      fileType: data.fileType || 'general',     
+      description: data.description || null,
+      originalName: file.originalname,
+      filename: file.filename,
+      size: file.size,
+      mimetype: file.mimetype,
+      path: file.path,
+      uploadedAt: new Date(),
+    }));
+
+    await this.db.collection('patient_medical_files').insertMany(records);
+    return records;
+  }
+
+  async getPatientMedicalFiles(
+    patientId: string,
+    fileType?: string,
+  ): Promise<any[]> {
+    const query: Record<string, any> = { patientId };
+    if (fileType) query.fileType = fileType;
+
+    return this.db
+      .collection('patient_medical_files')
+      .find(query)
+      .sort({ uploadedAt: -1 })
+      .toArray();
   }
 }
