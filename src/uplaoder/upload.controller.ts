@@ -139,4 +139,12 @@ export class UploadController {
   ) {
     return this.uploadService.getPatientMedicalFiles(patientId, fileType);
   }
+
+  @Get('download/:filename')
+  async downloadFile(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    return this.uploadService.downloadFile(filename, res);
+  }
 }
