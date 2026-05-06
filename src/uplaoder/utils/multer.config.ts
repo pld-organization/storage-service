@@ -1,35 +1,62 @@
-import { diskStorage } from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
+import { Multer } from 'multer';
+import { GridFsStorage } from 'multer-gridfs-storage';
 import { BadRequestException } from '@nestjs/common';
+import * as path from 'path';
 
-// Ensure upload directory exists
-const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Ensure medical upload directory exists
-const medicalUploadDir = path.join(process.cwd(), 'public', 'uploads', 'medical');
-if (!fs.existsSync(medicalUploadDir)) {
-  fs.mkdirSync(medicalUploadDir, { recursive: true });
-}
-
+// Configuration GridFS
 export const multerConfig = {
-  storage: diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
-      cb(null, filename);
+  storage: new GridFsStorage({
+    url: process.env.MONGO_URI, // Utilise ta variable d'environnement MongoDB
+    file: (req, file) => {
+      return new Promise((resolve, reject) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
+        
+        resolve({
+          filename: filename,
+          bucketName: 'uploads', // Nom du bucket GridFS
+          metadata: {
+            originalName: file.originalname,
+            uploadedAt: new Date(),
+            mimetype: file.mimetype,
+          },
+        });
+      });
     },
   }),
   limits: {
-    // 300MB: 300 * 1024 * 1024 bytes
-    fileSize: 314572800,
+    fileSize: 314572800, // 300MB
     fieldSize: 104857600,
+  },
+  fileFilter: (req, file, cb) => {
+    // ... garde ton fileFilter existant
+  },
+};
+
+export const multerMedicalConfig = {
+  storage: new GridFsStorage({
+    url: process.env.MONGO_URI,
+    file: (req, file) => {
+      return new Promise((resolve, reject) => {
+        const uniqueSuffix = Date.now() '-' + Math.round(Math.random() * 1e9);
+        const filename = 'medical-' + uniqueSuffix + path.extname(file.originalname);
+        
+        resolve({
+          filename: filename,
+          bucketName: 'medical-files', // Bucket dédié pour les fichiers médicaux
+          metadata: {
+            originalName: file.originalname,
+            patientId: req.body.patientId,
+            fileType: req.body.fileType || 'general',
+            description: req.body.description || null,
+            uploadedAt: new Date(),
+          },
+        });
+      });
+    },
+  }),
+  limits: {
+    fileSize: 20971520, // 20MB
   },
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = [
