@@ -5,7 +5,7 @@ import * as path from 'path';
 // Configuration GridFS pour les fichiers généraux
 export const multerConfig = {
   storage: new GridFsStorage({
-    url: process.env.MONGO_URI,
+    url: process.env.MONGO_URI ?? (() => { throw new Error('MONGO_URI is not defined') })(),
     file: (req, file) => {
       return new Promise((resolve, reject) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -66,7 +66,7 @@ export const multerConfig = {
 // Configuration GridFS pour les fichiers médicaux (UN SEULE DÉFINITION)
 export const multerMedicalConfig = {
   storage: new GridFsStorage({
-    url: process.env.MONGO_URI,
+    url: process.env.MONGO_URI ?? (() => { throw new Error('MONGO_URI is not defined') })(),
     file: (req, file) => {
       return new Promise((resolve, reject) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
