@@ -8,12 +8,13 @@ import {
   UploadedFile,
   UploadedFiles,
   Body,
+  res,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { multerConfig, multerMedicalConfig } from './utils/multer.config';
-
+import { Response } from 'express';
 
 @Controller('upload')
 export class UploadController {
