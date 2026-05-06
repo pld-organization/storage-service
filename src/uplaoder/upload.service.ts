@@ -238,49 +238,29 @@ export class UploadService {
     try {
       console.log("🔍 Recherche du fichier:", filename);
     
-      // Cherche les métadonnées dans patient_medical_files
-      let fileMetadata = await this.db
-        .collection('patient_medical_files')
-        .findOne({ filename });
+      const bucket = new GridFSBucket(this.db, {
+        bucketName: 'medical-files'
+      });
     
-      if (!fileMetadata) {
-        fileMetadata = await this.db
-          .collection('uploads')
-          .findOne({ filename });
-      }
+      // Cherche le fichier dans GridFS
+      const files = await bucket.find({ filename: filename }).toArray();
     
-      if (!fileMetadata) {
+      if (!files || files.length === 0) {
         throw new NotFoundException('Fichier non trouvé');
       }
     
-      console.log("✅ Métadonnées trouvées");
-    
-      // Crée un bucket GridFS
-      const bucket = new GridFSBucket(this.db, {
-        bucketName: 'fs'  // ou le nom de ton bucket, souvent 'fs' par défaut
-      });
-    
-      // Ouvre le stream de téléchargement
-      const downloadStream = bucket.openDownloadStreamByName(filename);
-    
-      const originalName = fileMetadata.originalName || filename;
-      const mimeType = fileMetadata.mimetype || 'application/octet-stream';
+      const file = files[0];
+      const originalName = file.metadata?.originalName || filename;
+      const mimeType = file.metadata?.mimetype || 'application/octet-stream';
     
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
     
+      const downloadStream = bucket.openDownloadStream(file._id);
       downloadStream.pipe(res);
     
-      downloadStream.on('error', (error) => {
-        console.error("Stream error:", error);
-        throw new InternalServerErrorException('Erreur lors de la lecture du fichier');
-      });
-      
     } catch (error) {
       console.error('Download error:', error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new BadRequestException('Erreur lors du téléchargement');
     }
   }
@@ -293,7 +273,7 @@ export class UploadService {
       throw new BadRequestException('patientId est requis');
     }
 
-    const records = files.map((file) => ({
+   const records = files.map((file) => ({
       patientId: data.patientId,
       fileType: data.fileType || 'general',     
       description: data.description || null,
@@ -301,10 +281,9 @@ export class UploadService {
       filename: file.filename,
       size: file.size,
       mimetype: file.mimetype,
-      path: file.path,
+      gridFSBucket: 'medical-files',
       uploadedAt: new Date(),
     }));
-
     await this.db.collection('patient_medical_files').insertMany(records);
     return records;
   }
