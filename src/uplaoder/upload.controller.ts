@@ -141,11 +141,11 @@ export class UploadController {
     return this.uploadService.getPatientMedicalFiles(patientId, fileType);
   }
 
-  @Get('download/:filename')
-  async downloadFile(
+  @Get('download-file/:filename')
+  async downloadFileContent(
     @Param('filename') filename: string,
     @Res() res: Response,
   ) {
-    return this.uploadService.downloadFile(filename, res);
+    return this.uploadService.downloadFileContent(filename, res);
   }
 }
