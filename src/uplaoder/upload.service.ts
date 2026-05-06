@@ -255,8 +255,8 @@ export class UploadService {
       }
 
       // If found in DB but not in GridFS, the upload config is wrong
-      throw new InternalServerErrorException(
-        'Fichier trouvé en base mais absent de GridFS — vérifiez multerMedicalConfig'
+      throw new NotFoundException(
+        `Fichier "${filename}" introuvable dans le stockage. Veuillez re-uploader ce fichier.`
       );
     }
 
