@@ -9,7 +9,7 @@ export default registerAs('mongodb', () => {
 
   // Build connection string with auth if credentials exist
   const auth = username && password ? `${username}:${password}@` : '';
-  const uri = process.env.MONGO_URI || `mongodb://${auth}${host}:${port}`;
+  const uri = process.env.MONGODB_URI || `mongodb://${auth}${host}:${port}`;
 
   return {
     uri,
