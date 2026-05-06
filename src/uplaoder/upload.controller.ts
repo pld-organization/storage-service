@@ -144,7 +144,7 @@ export class UploadController {
   @Get('download/:filename')
   async downloadFile(
     @Param('filename') filename: string,
-    @Res() res: Response,
+    @Res() Res: Response,
   ) {
     return this.uploadService.downloadFile(filename, res);
   }
