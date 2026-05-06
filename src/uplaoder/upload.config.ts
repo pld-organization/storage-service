@@ -26,22 +26,37 @@ export const multerConfig = {
       );
     },
   }),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 314572800 }, // 300 MB
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
+    const allowedMimeTypes = [
       'application/pdf',
       'image/jpeg',
       'image/png',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      // NIfTI (.nii, .nii.gz)
+      'application/octet-stream',
+      'application/gzip',
+      'application/x-gzip',
+      'image/gz',
+      // RAR archives
+      'application/x-rar-compressed',
+      'application/vnd.rar',
+      'application/rar',
     ];
 
-    if (allowedTypes.includes(file.mimetype)) {
+    const allowedExtensions = ['.nii', '.nii.gz', '.rar'];
+    const originalName: string = file.originalname || '';
+    const matchedByExtension = allowedExtensions.some((ext) =>
+      originalName.toLowerCase().endsWith(ext),
+    );
+
+    if (allowedMimeTypes.includes(file.mimetype) || matchedByExtension) {
       cb(null, true);
     } else {
       cb(
         new Error(
-          'Type de fichier non supporté. Seuls PDF, JPEG, PNG et DOC sont autorisés.',
+          'Type de fichier non supporté. Seuls PDF, JPEG, PNG, DOC, NIfTI (.nii, .nii.gz) et RAR sont autorisés.',
         ),
         false,
       );
