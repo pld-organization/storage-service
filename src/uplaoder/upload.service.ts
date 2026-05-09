@@ -11,27 +11,30 @@ export class UploadService {
   constructor(@Inject('MONGO_DB') private db: Db) {}
   
   async uploadFile(
-  file: Express.Multer.File,
-  data: Record<string, any>,
-) {
-  const fileData = {
-    ...data,                                          // everything from the form
-    prediction: data.prediction
-      ? (typeof data.prediction === 'string'
-      ? JSON.parse(data.prediction)
-      : data.prediction)
-  : null,
-    originalName: file.originalname,
-    filename:     file.filename,
-    size:         file.size,
-    mimetype:     file.mimetype,
-    path:         file.path,
-    uploadedAt:   new Date(),
-  };
-
-  await this.db.collection('uploads').insertOne(fileData);
-  return fileData;
-}
+    file: Express.Multer.File,
+    data: Record<string, any>,
+  ) {
+    // Auto parse any JSON strings
+    const parsedData: Record<string, any> = {};
+    for (const key in data) {
+      try {
+        parsedData[key] = JSON.parse(data[key]);
+      } catch {
+        parsedData[key] = data[key];
+      }
+    }
+    const fileData = {
+      ...parsedData,
+      originalName: file.originalname,
+      filename: file.filename,
+      size: file.size,
+      mimetype: file.mimetype,
+      path: file.path,
+      uploadedAt: new Date(),
+    };
+    await this.db.collection('uploads').insertOne(fileData); 
+    return fileData;
+  }
 
  async getFilesByPatientAndType(
    patientId: string,
@@ -205,4 +208,20 @@ export class UploadService {
       ...combinedData
     };
   }
+  async downloadFile(filename: string) {
+    const fileRecord = await this.db
+      .collection('uploads')
+      .findOne({ filename });
+  
+    if (!fileRecord) {
+      throw new NotFoundException('File not found');
+    }
+  
+    if (!fileRecord.path || !fs.existsSync(fileRecord.path)) {
+      throw new NotFoundException('Physical file missing on disk');
+    }
+  
+    return fileRecord;
+  }
+  
 }

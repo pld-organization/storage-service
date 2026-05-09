@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Query,
+  Res,
   Param,
   UseInterceptors,
   UploadedFile,
@@ -13,7 +14,7 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { multerConfig } from './utils/multer.config';
-
+import type { Response } from 'express';
 
 @Controller('upload')
 export class UploadController {
@@ -102,5 +103,17 @@ export class UploadController {
   @Get('meshfetch/:meshFilename')
   async getMeshByName(@Param('meshFilename') meshFilename: string) { // <-- Added the closing ')' here
     return this.uploadService.getmesh(meshFilename);
+  }
+  @Get('download/:filename')
+  async downloadFile(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    const fileRecord = await this.uploadService.downloadFile(filename);
+
+    return res.download(
+      fileRecord.path,
+      fileRecord.originalName,
+    );
   }
 }

@@ -21,6 +21,6 @@ async function bootstrap() {
   });
   app.useGlobalFilters(new MulterExceptionFilter());
   const port = process.env.PORT || 3001;
-  await app.listen(port, '0.0.0.0');
+  await app.listen(port);
 }
 bootstrap();
